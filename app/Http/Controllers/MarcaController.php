@@ -4,9 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Marca;
 use Illuminate\Http\Request;
+use Ramsey\Uuid\Type\Integer;
 
 class MarcaController extends Controller
 {
+
+    public function __construct(Marca $marca)
+    {
+        $this->marca = $marca;
+    }
     /**
      * Display a listing of the resource.
      *
@@ -14,17 +20,9 @@ class MarcaController extends Controller
      */
     public function index()
     {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
+        // $marca = Marca::all();
+        $marca = $this->marca->all();
+        return $marca;
     }
 
     /**
@@ -35,51 +33,57 @@ class MarcaController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        // $marca = Marca::create($request->all());
+        $marca = $this->marca->create($request->all());
+        return $marca;
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Marca  $marca
+     * @param  Integer
      * @return \Illuminate\Http\Response
      */
-    public function show(Marca $marca)
+    public function show($id)
     {
-        //
-    }
+        $marca = $this->marca->find($id);
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Marca  $marca
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Marca $marca)
-    {
-        //
+        if(is_null($marca)) {
+            return ['erro' => 'Registro não encontrado'];
+        }
+        return $marca;
     }
-
     /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Marca  $marca
+     * @param  Integer
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Marca $marca)
+    public function update(Request $request, $id)
     {
-        //
+        // $marca->update($request->all());
+        $marca = $this->marca->find($id);
+        if(is_null($marca)) {
+            return ['erro'=> 'Não foi possivel realizar a atualização, registro não encontrado'];
+        }
+        $marca->update($request->all());
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Marca  $marca
+     * @param  Integer
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Marca $marca)
+    public function destroy($id)
     {
-        //
+        // $marca->delete();
+        $marca = $this->marca->find($id);
+        if(is_null($marca)) {
+            return ['erro'=> 'Não foi possivel apagar, registro não encontrado'];
+        }
+        $marca->delete();
+        return 'Marca deletada com sucesso';
     }
 }
