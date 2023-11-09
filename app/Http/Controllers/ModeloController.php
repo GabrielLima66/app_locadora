@@ -4,9 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Modelo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ModeloController extends Controller
 {
+
+    public function __construct(Modelo $modelo)
+    {
+        $this->modelo = $modelo;
+    }
     /**
      * Display a listing of the resource.
      *
@@ -14,17 +20,8 @@ class ModeloController extends Controller
      */
     public function index()
     {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
+        $modelo = $this->modelo->all();
+        return $modelo;
     }
 
     /**
@@ -35,7 +32,21 @@ class ModeloController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate($this->modelo->rules());
+
+        $imagem = $request->file('imagem');
+        $imagem_urn = $imagem->store('imagens/modelos','public');
+
+        $modelo = $this->modelo->create([
+            'marca_id' => $request->marca_id,
+            'nome' => $request->nome,
+            'imagem' => $imagem_urn,
+            'numero_portas' => $request->numero_portas,
+            'lugares' => $request->lugares,
+            'air_bag' => $request->air_bag,
+            'abs' => $request->abs
+        ]);
+        return response()->json($modelo,201);
     }
 
     /**
@@ -44,20 +55,15 @@ class ModeloController extends Controller
      * @param  \App\Models\Modelo  $modelo
      * @return \Illuminate\Http\Response
      */
-    public function show(Modelo $modelo)
+    public function show($id)
     {
-        //
-    }
+        $modelo = $this->modelo->find($id);
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Modelo  $modelo
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Modelo $modelo)
-    {
-        //
+        if(is_null($modelo)) {
+            return response()->json(["message"=> "Não foi possivel listar, registro não encontrado"],404);
+
+        }
+        return  response()->json($modelo,201);
     }
 
     /**
@@ -67,9 +73,44 @@ class ModeloController extends Controller
      * @param  \App\Models\Modelo  $modelo
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Modelo $modelo)
+    public function update(Request $request, $id)
     {
-        //
+        $modelo = $this->modelo->find($id);
+
+        if(is_null($modelo)) {
+            return response()->json(["message"=> "Não foi possivel alterar, registro não encontrado"],404);
+        }
+
+        if($request->method() === 'PATCH'){
+            $regrasDinamicas = array();
+
+            foreach($modelo->rules() as $input => $regra){
+                if(array_key_exists($input,$request->all())){
+                    $regrasDinamicas[$input] = $regra;
+                }
+            }
+        } else{
+            $request->validate($modelo->rules());
+        }
+        //remove imagem antiga, caso tenha sido enviado no update
+        if($request->file('imagem')){
+            Storage::disk('public')->delete($modelo->imagem);
+        }
+
+        $imagem = $request->file('imagem');
+        $imagem_urn = $imagem->store('imagens/modelos','public');
+
+        $modelo->update([
+            'marca_id' => $request->marca_id,
+            'nome' => $request->nome,
+            'imagem' => $imagem_urn,
+            'numero_portas' => $request->numero_portas,
+            'lugares' => $request->lugares,
+            'air_bag' => $request->air_bag,
+            'abs' => $request->abs
+        ]);
+
+        return response()->json($modelo,200);
     }
 
     /**
@@ -78,8 +119,16 @@ class ModeloController extends Controller
      * @param  \App\Models\Modelo  $modelo
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Modelo $modelo)
+    public function destroy($id)
     {
-        //
+        $modelo = $this->modelo->find($id);
+        if(is_null($modelo)) {
+            return response()->json(['message'=> 'Não foi possivel apagar, registro não encontrado'],404);
+        }
+
+            Storage::disk('public')->delete($modelo->imagem);
+            
+        $modelo->delete();
+        return 'Modelo deletado com sucesso';
     }
 }

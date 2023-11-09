@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Marca;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Type\Integer;
+use Illuminate\Support\Facades\Storage;
 
 class MarcaController extends Controller
 {
@@ -34,8 +35,16 @@ class MarcaController extends Controller
     public function store(Request $request)
     {
         // $marca = Marca::create($request->all());
-        $marca = $this->marca->create($request->all());
-        return $marca;
+        $request->validate($this->marca->rules(),$this->marca->feedback());
+
+        $imagem = $request->file('imagem');
+        $imagem_urn = $imagem->store('imagens','public');
+
+        $marca = $this->marca->create([
+            'nome' => $request->nome,
+            'imagem' => $imagem_urn
+        ]);
+        return response()->json($marca,201);
     }
 
     /**
@@ -49,9 +58,10 @@ class MarcaController extends Controller
         $marca = $this->marca->find($id);
 
         if(is_null($marca)) {
-            return ['erro' => 'Registro não encontrado'];
+            return response()->json(["message"=> "Não foi possivel listar, registro não encontrado"],404);
+
         }
-        return $marca;
+        return  response()->json($marca,201);
     }
     /**
      * Update the specified resource in storage.
@@ -63,11 +73,38 @@ class MarcaController extends Controller
     public function update(Request $request, $id)
     {
         // $marca->update($request->all());
+
         $marca = $this->marca->find($id);
+
         if(is_null($marca)) {
-            return ['erro'=> 'Não foi possivel realizar a atualização, registro não encontrado'];
+            return response()->json(["message"=> "Não foi possivel alterar, registro não encontrado"],404);
         }
-        $marca->update($request->all());
+
+        if($request->method() === 'PATCH'){
+            $regrasDinamicas = array();
+
+            foreach($marca->rules() as $input => $regra){
+                if(array_key_exists($input,$request->all())){
+                    $regrasDinamicas[$input] = $regra;
+                }
+            }
+        } else{
+            $request->validate($marca->rules(),$marca->feedback());
+        }
+        //remove imagem antiga, caso tenha sido enviado no update
+        if($request->file('imagem')){
+            Storage::disk('public')->delete($marca->imagem);
+        }
+
+        $imagem = $request->file('imagem');
+        $imagem_urn = $imagem->store('imagens','public');
+
+        $marca->update([
+            'nome' => $request->nome,
+            'imagem' => $imagem_urn
+        ]);
+
+        return response()->json($marca,200);
     }
 
     /**
@@ -81,8 +118,11 @@ class MarcaController extends Controller
         // $marca->delete();
         $marca = $this->marca->find($id);
         if(is_null($marca)) {
-            return ['erro'=> 'Não foi possivel apagar, registro não encontrado'];
+            return response()->json(['message'=> 'Não foi possivel apagar, registro não encontrado'],404);
         }
+
+            Storage::disk('public')->delete($marca->imagem);
+            
         $marca->delete();
         return 'Marca deletada com sucesso';
     }
