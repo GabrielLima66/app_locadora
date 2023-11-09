@@ -66,7 +66,7 @@ class MarcaController extends Controller
      */
     public function update(Request $request, $id){
         // $marca->update($request->all());
-
+        $imagem_urn = '';
         $marca = $this->marca->find($id);
 
         if(is_null($marca)) {
@@ -87,10 +87,10 @@ class MarcaController extends Controller
         //remove imagem antiga, caso tenha sido enviado no update
         if($request->file('imagem')){
             Storage::disk('public')->delete($marca->imagem);
+            $imagem = $request->file('imagem');
+            $imagem_urn = $imagem->store('imagens','public');
         }
 
-        $imagem = $request->file('imagem');
-        $imagem_urn = $imagem->store('imagens','public');
 
         $marca->fill($request->all());
         $marca->imagem = $imagem_urn;
