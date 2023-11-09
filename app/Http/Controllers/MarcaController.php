@@ -10,8 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class MarcaController extends Controller
 {
 
-    public function __construct(Marca $marca)
-    {
+    public function __construct(Marca $marca){
         $this->marca = $marca;
     }
     /**
@@ -19,11 +18,8 @@ class MarcaController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
-    {
-        // $marca = Marca::all();
-        $marca = $this->marca->all();
-        return $marca;
+    public function index(){
+        return response()->json($this->marca->with('modelos')->get(),200);
     }
 
     /**
@@ -32,8 +28,7 @@ class MarcaController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request){
         // $marca = Marca::create($request->all());
         $request->validate($this->marca->rules(),$this->marca->feedback());
 
@@ -53,9 +48,8 @@ class MarcaController extends Controller
      * @param  Integer
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
-    {
-        $marca = $this->marca->find($id);
+    public function show($id){
+        $marca = $this->marca->with('modelos')->find($id);
 
         if(is_null($marca)) {
             return response()->json(["message"=> "Não foi possivel listar, registro não encontrado"],404);
@@ -70,8 +64,7 @@ class MarcaController extends Controller
      * @param  Integer
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
+    public function update(Request $request, $id){
         // $marca->update($request->all());
 
         $marca = $this->marca->find($id);
@@ -99,10 +92,14 @@ class MarcaController extends Controller
         $imagem = $request->file('imagem');
         $imagem_urn = $imagem->store('imagens','public');
 
-        $marca->update([
-            'nome' => $request->nome,
-            'imagem' => $imagem_urn
-        ]);
+        $marca->fill($request->all());
+        $marca->imagem = $imagem_urn;
+        $marca->save();
+
+        // $marca->update([
+        //     'nome' => $request->nome,
+        //     'imagem' => $imagem_urn
+        // ]);
 
         return response()->json($marca,200);
     }
@@ -113,8 +110,7 @@ class MarcaController extends Controller
      * @param  Integer
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
-    {
+    public function destroy($id){
         // $marca->delete();
         $marca = $this->marca->find($id);
         if(is_null($marca)) {

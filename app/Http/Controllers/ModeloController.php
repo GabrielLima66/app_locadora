@@ -9,8 +9,7 @@ use Illuminate\Support\Facades\Storage;
 class ModeloController extends Controller
 {
 
-    public function __construct(Modelo $modelo)
-    {
+    public function __construct(Modelo $modelo){
         $this->modelo = $modelo;
     }
     /**
@@ -18,10 +17,8 @@ class ModeloController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
-    {
-        $modelo = $this->modelo->all();
-        return $modelo;
+    public function index(){
+        return response()->json($this->modelo->with('marca')->get(),200);
     }
 
     /**
@@ -30,8 +27,7 @@ class ModeloController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request){
         $request->validate($this->modelo->rules());
 
         $imagem = $request->file('imagem');
@@ -55,9 +51,8 @@ class ModeloController extends Controller
      * @param  \App\Models\Modelo  $modelo
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
-    {
-        $modelo = $this->modelo->find($id);
+    public function show($id){
+        $modelo = $this->modelo->with('marca')->find($id);
 
         if(is_null($modelo)) {
             return response()->json(["message"=> "Não foi possivel listar, registro não encontrado"],404);
@@ -73,8 +68,7 @@ class ModeloController extends Controller
      * @param  \App\Models\Modelo  $modelo
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
+    public function update(Request $request, $id){
         $modelo = $this->modelo->find($id);
 
         if(is_null($modelo)) {
@@ -100,15 +94,9 @@ class ModeloController extends Controller
         $imagem = $request->file('imagem');
         $imagem_urn = $imagem->store('imagens/modelos','public');
 
-        $modelo->update([
-            'marca_id' => $request->marca_id,
-            'nome' => $request->nome,
-            'imagem' => $imagem_urn,
-            'numero_portas' => $request->numero_portas,
-            'lugares' => $request->lugares,
-            'air_bag' => $request->air_bag,
-            'abs' => $request->abs
-        ]);
+        $modelo->fill($request->all());
+        $modelo->imagem = $imagem_urn;
+        $modelo->save();
 
         return response()->json($modelo,200);
     }
@@ -119,8 +107,7 @@ class ModeloController extends Controller
      * @param  \App\Models\Modelo  $modelo
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
-    {
+    public function destroy($id){
         $modelo = $this->modelo->find($id);
         if(is_null($modelo)) {
             return response()->json(['message'=> 'Não foi possivel apagar, registro não encontrado'],404);
