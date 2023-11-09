@@ -69,6 +69,7 @@ class ModeloController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id){
+        $imagem_urn = '';
         $modelo = $this->modelo->find($id);
 
         if(is_null($modelo)) {
@@ -89,10 +90,10 @@ class ModeloController extends Controller
         //remove imagem antiga, caso tenha sido enviado no update
         if($request->file('imagem')){
             Storage::disk('public')->delete($modelo->imagem);
+            $imagem = $request->file('imagem');
+            $imagem_urn = $imagem->store('imagens/modelos','public');
         }
-
-        $imagem = $request->file('imagem');
-        $imagem_urn = $imagem->store('imagens/modelos','public');
+        
 
         $modelo->fill($request->all());
         $modelo->imagem = $imagem_urn;
